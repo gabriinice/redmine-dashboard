@@ -1,0 +1,23 @@
+# Não enviar senhas e configurações
+.env
+backend/.env
+frontend/.env
+
+# Não enviar dependências (são baixadas automaticamente)
+node_modules/
+vendor/bundle/
+
+# Não enviar logs
+*.log
+logs/
+
+# Não enviar cache
+tmp/
+.cache/
+dist/
+build/
+.output/
+
+# Não enviar arquivos do sistema
+.DS_Store
+Thumbs.db

@@ -1,0 +1,46 @@
+source "https://rubygems.org"
+git_source(:github) { |repo| "https://github.com/#{repo}.git" }
+
+ruby "~> 3.2.0"
+
+# Framework
+gem "rails", "~> 7.1.0"
+
+# Banco de dados
+gem "pg", "~> 1.5"
+
+# Servidor
+gem "puma", "~> 6.0"
+
+# Cache e background jobs
+gem "redis", "~> 5.0"
+gem "sidekiq", "~> 7.0"
+
+# Autenticacao JWT
+gem "jwt", "~> 2.7"
+gem "bcrypt", "~> 3.1.7"
+
+# HTTP client para Redmine API
+gem "faraday", "~> 2.7"
+gem "faraday-retry", "~> 2.2"
+
+# CORS
+gem "rack-cors"
+
+# Timezone
+gem "tzinfo-data", platforms: %i[ mingw mswin x64_mingw jruby ]
+
+# Performance
+gem "bootsnap", require: false
+
+group :development, :test do
+  gem "debug", platforms: %i[ mri mingw x64_mingw ]
+  gem "rspec-rails", "~> 6.0"
+  gem "factory_bot_rails", "~> 6.2"
+  gem "faker", "~> 3.2"
+end
+
+group :development do
+  gem "rubocop", require: false
+  gem "rubocop-rails", require: false
+end
