@@ -21,3 +21,7 @@ build/
 # Não enviar arquivos do sistema
 .DS_Store
 Thumbs.db
+
+# Não enviar chave ssh
+redminecode
+redminecode.pub
