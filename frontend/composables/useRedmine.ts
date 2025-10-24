@@ -5,6 +5,9 @@
 export const useRedmine = () => {
   const api = useApi()
 
+  // Cache simples para evitar requisições desnecessárias
+  const cache = new Map()
+
   /**
    * Busca issues com filtros
    */
@@ -17,7 +20,19 @@ export const useRedmine = () => {
     limit?: number
     offset?: number
   }) => {
-    return await api.get('/api/v1/issues', filters)
+    const cacheKey = JSON.stringify(filters)
+    
+    if (cache.has(cacheKey)) {
+      return cache.get(cacheKey)
+    }
+    
+    const result = await api.get('/api/v1/issues', filters)
+    cache.set(cacheKey, result)
+    
+    // Limpar cache após 30 segundos
+    setTimeout(() => cache.delete(cacheKey), 30000)
+    
+    return result
   }
 
   /**
@@ -34,6 +49,8 @@ export const useRedmine = () => {
    */
   const fetchAtividadesTime = async (filters?: {
     assigned_to_id?: number
+    status_id?: string
+    cf_11?: string
     limit?: number
     offset?: number
   }) => {
@@ -153,3 +170,4 @@ export const useRedmine = () => {
     reviewStoryWithAI,
   }
 }
+

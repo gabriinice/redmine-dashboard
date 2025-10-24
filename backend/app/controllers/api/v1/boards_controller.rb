@@ -11,13 +11,13 @@ module Api
         client = redmine_client
 
         # Status padrão se não fornecido
-        default_status_ids = [28, 1, 15, 3, 4, 5, 2]  # to analyze, to do, on hold, in progress, staging, awaiting deploy, done
+        default_status_ids = [29, 28, 30, 31, 1, 3, 15, 4, 5]  # to check, to analyze, to prioritize, to estimate, to do, in progress, on hold, staging, awaiting deploy
 
         filters = {
           project_id: params[:project_id] || 'dev',
-          limit: params[:limit] || 100,
-          offset: params[:offset] || 0,
-          include: 'journals,attachments'
+          limit: params[:limit] || 300,  # Aumentado para capturar todas as issues
+          offset: params[:offset] || 0
+          # Removido: include: 'journals,attachments'
         }
 
         # Filtro por status - suporta filtro do frontend
@@ -32,14 +32,22 @@ module Api
         # Filtro por pessoa se fornecido
         filters[:assigned_to_id] = params[:assigned_to_id] if params[:assigned_to_id].present?
 
+        # Filtro por kind (cf_11: Macro, Task, Group)
+        filters[:cf_11] = params[:cf_11] if params[:cf_11].present?
+
         result = client.fetch_issues(filters)
         issues = result['issues'] || []
+
+        # Log para debug
+        Rails.logger.info "Atividades Time - Total no Redmine: #{result['total_count']}, Retornadas: #{issues.count}"
+        Rails.logger.info "Filtros aplicados: #{filters.inspect}"
 
         # Agrupar por usuário
         issues_by_user = group_by_assigned_user(issues)
 
         render json: {
           total_count: result['total_count'],
+          issues_count: issues.count,
           issues_by_user: issues_by_user
         }, status: :ok
       end
@@ -54,9 +62,9 @@ module Api
           tracker_id: [1],  # feature
           cf_11: 'Macro',
           status_id: [29, 28, 30, 31, 1, 15, 3, 4, 5],  # to check até awaiting deploy
-          limit: params[:limit] || 100,
-          offset: params[:offset] || 0,
-          include: 'journals,attachments'
+          limit: params[:limit] || 50,  # Reduzido de 100 para 50
+          offset: params[:offset] || 0
+          # Removido: include: 'journals,attachments'
         }
 
         result = client.fetch_issues(filters)
@@ -81,9 +89,9 @@ module Api
           tracker_id: [2, 6, 7, 10, 11, 14],
           cf_11: 'Macro',
           status_id: [29, 28, 30, 31, 1, 15, 3, 4, 5],
-          limit: params[:limit] || 100,
-          offset: params[:offset] || 0,
-          include: 'journals,attachments'
+          limit: params[:limit] || 50,  # Reduzido de 100 para 50
+          offset: params[:offset] || 0
+          # Removido: include: 'journals,attachments'
         }
 
         result = client.fetch_issues(filters)
@@ -106,9 +114,9 @@ module Api
         filters = {
           project_id: params[:project_id] || 'dev',
           status_id: [29],  # to check
-          limit: params[:limit] || 100,
-          offset: params[:offset] || 0,
-          include: 'journals,attachments'
+          limit: params[:limit] || 50,  # Reduzido de 100 para 50
+          offset: params[:offset] || 0
+          # Removido: include: 'journals,attachments'
         }
 
         result = client.fetch_issues(filters)
@@ -186,8 +194,8 @@ module Api
           status_id: [2],  # done
           closed_on: "><#{sprint_start}|#{sprint_end}",  # Issues fechadas na última semana
           limit: params[:limit] || 200,
-          offset: params[:offset] || 0,
-          include: 'journals,attachments'
+          offset: params[:offset] || 0
+          # Removido: include: 'journals,attachments'
         }
 
         result = client.fetch_issues(filters)
@@ -285,3 +293,5 @@ module Api
     end
   end
 end
+
+

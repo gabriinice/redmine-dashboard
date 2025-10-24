@@ -220,8 +220,13 @@ module Redmine
       # Usuário atribuído
       parts << "assigned_to_id=#{filters[:assigned_to_id]}" if filters[:assigned_to_id]
 
-      # Custom field
-      parts << "cf_11=#{CGI.escape(filters[:cf_11])}" if filters[:cf_11]
+      # Custom field cf_11 (Kind: Macro, Task, Group) - suporta múltiplos valores com PIPE
+      if filters[:cf_11].present?
+        # Se for array ou string com vírgulas, converte para PIPE notation
+        cf_11_values = filters[:cf_11].is_a?(Array) ? filters[:cf_11] : filters[:cf_11].to_s.split(',')
+        cf_11_query = cf_11_values.map { |v| CGI.escape(v.strip) }.join('|')
+        parts << "cf_11=#{cf_11_query}"
+      end
 
       # Updated on (date filter)
       parts << "updated_on=#{CGI.escape(filters[:updated_on])}" if filters[:updated_on]

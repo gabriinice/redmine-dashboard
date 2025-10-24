@@ -89,7 +89,7 @@
 
       <!-- Filtros -->
       <div class="mb-6 bg-white rounded-xl shadow-lg p-6 border-t-4 border-blue-700">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <!-- Filtro por pessoa -->
           <div class="flex flex-col space-y-2">
               <label class="text-sm font-semibold text-slate-700">Filtrar por Pessoa:</label>
@@ -132,10 +132,38 @@
                 </button>
               </div>
             </div>
+
+            <!-- Filtro por Kind -->
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-semibold text-slate-700">Filtrar por Tipo:</label>
+              <div class="flex items-center space-x-2">
+                <select
+                  v-model="selectedKinds"
+                  multiple
+                  @change="fetchData"
+                  class="flex-1 px-4 py-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 bg-white hover:border-emerald-400 transition-colors h-auto"
+                  size="3"
+                >
+                  <option v-for="kind in availableKinds" :key="kind.value" :value="kind.value">
+                    {{ kind.icon }} {{ kind.name }}
+                  </option>
+                </select>
+                <button
+                  v-if="selectedKinds.length > 0"
+                  @click="clearKindFilter"
+                  class="px-3 py-3 bg-slate-100 text-slate-600 hover:bg-red-100 hover:text-red-600 rounded-lg transition-colors"
+                  title="Limpar filtro de tipo"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
         </div>
 
         <!-- Filtros ativos -->
-        <div v-if="selectedUser || selectedStatuses.length > 0" class="mt-4 flex items-center space-x-2 p-3 bg-blue-50 rounded-lg">
+        <div v-if="selectedUser || selectedStatuses.length > 0 || selectedKinds.length > 0" class="mt-4 flex items-center space-x-2 p-3 bg-blue-50 rounded-lg">
           <svg class="w-5 h-5 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
@@ -304,6 +332,7 @@ const loading = ref(true)
 const error = ref('')
 const selectedUser = ref('')
 const selectedStatuses = ref([])
+const selectedKinds = ref([])
 const users = ref([])
 const issuesByUser = ref({})
 
@@ -314,14 +343,22 @@ const activeUsersCount = ref(0)
 
 // Lista de status disponíveis (IDs do Redmine)
 const availableStatuses = ref([
-  { id: 1, name: 'New' },
-  { id: 2, name: 'Awaiting Check' },
-  { id: 3, name: 'In Progress' },
-  { id: 7, name: 'Ready to Check' },
-  { id: 8, name: 'Awaiting Deploy' },
-  { id: 9, name: 'On Staging' },
-  { id: 10, name: 'On Hold' },
-  { id: 5, name: 'Closed' },
+  { id: 29, name: 'To Check' },           // Novas atividades nem vistas
+  { id: 28, name: 'To Analyze' },         // Atividades já lidas, em análise ou aguardando dados
+  { id: 30, name: 'To Prioritize' },      // Atividade analisada/estruturada mas não é prioridade
+  { id: 31, name: 'To Estimate' },        // Atividade estruturada, devs precisam estimar esforço
+  { id: 1, name: 'To Do' },               // A fazer depois de estimado esforço
+  { id: 3, name: 'In Progress' },         // Em andamento
+  { id: 15, name: 'On Hold' },            // Em pausa/espera
+  { id: 4, name: 'Staging' },             // Em fase de testes
+  { id: 5, name: 'Awaiting Deploy' },     // Aguardando para subir para produção
+])
+
+// Lista de kinds disponíveis (custom field cf_11)
+const availableKinds = ref([
+  { value: 'Group', name: 'Group', icon: '🔵', description: 'Atividade agrupadora' },
+  { value: 'Macro', name: 'Macro', icon: '🔶', description: 'Atividade principal' },
+  { value: 'Task', name: 'Task', icon: '🟢', description: 'Atividade individual' },
 ])
 
 /**
@@ -340,6 +377,10 @@ const fetchData = async () => {
 
     if (selectedStatuses.value.length > 0) {
       filters.status_id = selectedStatuses.value.join(',')
+    }
+
+    if (selectedKinds.value.length > 0) {
+      filters.cf_11 = selectedKinds.value.join(',')
     }
 
     const data = await redmine.fetchAtividadesTime(filters)
@@ -414,11 +455,20 @@ const clearStatusFilter = () => {
 }
 
 /**
+ * Limpa filtro de kind
+ */
+const clearKindFilter = () => {
+  selectedKinds.value = []
+  fetchData()
+}
+
+/**
  * Limpa todos os filtros
  */
 const clearAllFilters = () => {
   selectedUser.value = ''
   selectedStatuses.value = []
+  selectedKinds.value = []
   fetchData()
 }
 
@@ -454,12 +504,15 @@ const getPriorityBorderClass = (priority: string) => {
  */
 const getStatusBadgeClass = (status: string) => {
   const s = status.toLowerCase()
+  if (s.includes('to check')) return 'bg-gradient-to-r from-red-100 to-red-200 text-red-800 border border-red-300'
+  if (s.includes('to analyze')) return 'bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 border border-orange-300'
+  if (s.includes('to prioritize')) return 'bg-gradient-to-r from-amber-100 to-amber-200 text-amber-800 border border-amber-300'
+  if (s.includes('to estimate')) return 'bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border border-yellow-300'
+  if (s.includes('to do')) return 'bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border border-blue-300'
   if (s.includes('progress')) return 'bg-gradient-to-r from-indigo-100 to-indigo-200 text-indigo-800 border border-indigo-300'
-  if (s.includes('check')) return 'bg-gradient-to-r from-red-100 to-red-200 text-red-800 border border-red-300'
-  if (s.includes('deploy')) return 'bg-gradient-to-r from-cyan-100 to-cyan-200 text-cyan-800 border border-cyan-300'
-  if (s.includes('staging')) return 'bg-gradient-to-r from-pink-100 to-pink-200 text-pink-800 border border-pink-300'
   if (s.includes('hold')) return 'bg-gradient-to-r from-slate-100 to-slate-200 text-slate-800 border border-slate-300'
-  if (s.includes('new')) return 'bg-gradient-to-r from-emerald-100 to-emerald-200 text-emerald-800 border border-emerald-300'
+  if (s.includes('staging')) return 'bg-gradient-to-r from-pink-100 to-pink-200 text-pink-800 border border-pink-300'
+  if (s.includes('deploy')) return 'bg-gradient-to-r from-cyan-100 to-cyan-200 text-cyan-800 border border-cyan-300'
   if (s.includes('done') || s.includes('closed')) return 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300'
   return 'bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border border-blue-300'
 }
