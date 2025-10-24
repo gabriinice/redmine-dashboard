@@ -17,6 +17,7 @@ tmp/
 dist/
 build/
 .output/
+.nuxt/
 
 # Não enviar arquivos do sistema
 .DS_Store
